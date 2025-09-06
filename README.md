@@ -58,7 +58,7 @@ mvn spring-boot:run
 http://localhost:8080/swagger-ui/index.html
 ```
 ## 3. Authentication & JWT
-3.1 Register User
+## 3.1 Register User
 ```
 POST http://localhost:8080/public/api/registration
 ```
