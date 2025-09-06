@@ -15,7 +15,7 @@ Built with **Spring Boot 3**, **Spring Security (JWT)**, **Hibernate/JPA**, and 
 
 ## Tech Stack
 - **Backend:** Spring Boot 3, Spring Security, JWT
-- **Database:** MySQL (or any JPA-supported DB)
+- **Database:** MySQL 
 - **ORM:** Hibernate / Spring Data JPA
 - **Validation:** Jakarta Bean Validation
 - **API Docs:** Springdoc OpenAPI (Swagger)
