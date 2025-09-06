@@ -33,7 +33,12 @@ public class SecurityConfig {
 			  request -> 
 			  request.requestMatchers("/public/api/**")
 			  .permitAll()
-			  .requestMatchers("/admin/**").hasRole("ADMIN")
+			    .requestMatchers(
+	                    "/swagger-ui/**",
+	                    "/v3/api-docs/**",
+	                    "/swagger-ui.html"
+	                ).permitAll()
+			  .requestMatchers("/api/admin/**").hasRole("ADMIN")
 			  .requestMatchers("/api/**").hasRole("USER")
 			  .anyRequest().authenticated()) .cors().and()
 	          .csrf(AbstractHttpConfigurer::disable).

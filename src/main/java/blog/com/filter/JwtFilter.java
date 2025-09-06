@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import blog.com.service.CustomeUserDetailsService;
+import blog.com.service.TokenBlacklistService;
 import blog.com.utilis.JwtUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -25,6 +26,9 @@ public class JwtFilter extends OncePerRequestFilter {
 	private JwtUtils jwtUtils;
 	
 	@Autowired
+	private TokenBlacklistService blacklistService;
+	
+	@Autowired
 	private CustomeUserDetailsService customeUserDetailsService;
 
 	@Override
@@ -34,21 +38,26 @@ public class JwtFilter extends OncePerRequestFilter {
 		String authHeader=request.getHeader("Authorization");
 		String email=null;
 		String jwt=null;
-//		if(authHeader !=null && authHeader.startsWith("Bearer ")) {
-//			jwt=authHeader.substring(7);
-//			email=jwtUtils.extractEmail(jwt);
-//			
-//		}
+
 		 if (authHeader != null && authHeader.startsWith("Bearer ")) {
 		        jwt = authHeader.substring(7);
 		        try {
 		            email = jwtUtils.extractEmail(jwt);
 		        } catch (Exception e) {
-		            // Invalid token, just continue (don’t block)
+		         
 		            filterChain.doFilter(request, response);
 		            return;
 		        }
 		    }
+		 
+		 if(jwt !=null) {
+			 if(blacklistService.isTokenBlacklisted(jwt)) {
+				 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+			     return;
+			 
+			 }
+			 
+		 }
 		if(email!=null) {
 			UserDetails userDetails=customeUserDetailsService.loadUserByUsername(email);
 			if(jwtUtils.validateToken(jwt)) {
@@ -62,11 +71,7 @@ public class JwtFilter extends OncePerRequestFilter {
 				
 		 filterChain.doFilter(request, response);
 	}
-	  @Override
-	    protected boolean shouldNotFilter(HttpServletRequest request) {
-	        String path = request.getServletPath();
-	        return path.startsWith("/public/"); // 🚀 Skip JWT for public APIs
-	    }
+
 	
 
 }

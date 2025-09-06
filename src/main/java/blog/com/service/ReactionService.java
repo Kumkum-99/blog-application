@@ -4,11 +4,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
+import org.springframework.stereotype.Service;
 import blog.com.dto.PostResponse;
+import blog.com.exception.ResourceNotFound;
 import blog.com.model.Post;
 import blog.com.model.Reaction;
 import blog.com.model.ReactionType;
@@ -16,13 +15,11 @@ import blog.com.model.User;
 import blog.com.repository.PostRepository;
 import blog.com.repository.ReactionRepository;
 
-import lombok.extern.slf4j.Slf4j;
 
 
-@Component
-@Slf4j
+@Service
+
 public class ReactionService {
-	private static final org.slf4j.Logger LOGGER=LoggerFactory.getLogger(ReactionService.class);
 	
 	@Autowired
 	private PostRepository postRepository;
@@ -35,40 +32,42 @@ public class ReactionService {
 	 public Reaction  addLike(User user,Long postId) {
 
 		  Post post =postRepository.findById(postId)
-				  .orElseThrow(()-> new RuntimeException("Post not found"));
+				  .orElseThrow(()-> new ResourceNotFound("Post not found:"+postId));
 		  Optional<Reaction> existingLike = reactionRepository.findByUserAndPostAndType(user, post, ReactionType.LIKE);
 		  if(existingLike.isPresent()) {
 			  reactionRepository.delete(existingLike.get());
 			  return null;
 		  }else { 
 		  Reaction reaction = new Reaction();
+		
 	      reaction.setUser(user);
 	      reaction.setPost(post);
 	      reaction.setType(ReactionType.LIKE);
 	      return reactionRepository.save(reaction);	
 		  }
 	  }
+
 	  
 	  
 	  
 	   public Reaction addComment(User user,Long Postid,String commentText) {
 		   
-//		   User user=userRepository.findById(userId).orElseThrow(()->new RuntimeException("User not found.."));
-		   Post post=postRepository.findById(Postid).orElseThrow(()-> new RuntimeException("Post Not found.."));
+		   Post post=postRepository.findById(Postid).orElseThrow(()-> new ResourceNotFound("Post Not found.."+ Postid));
 		   Reaction reaction=new Reaction();
 		   reaction.setUser(user);
 		   reaction.setPost(post);
 		   reaction.setCommentText(commentText);
 		   reaction.setType(ReactionType.COMMENT);
+		   
 		   return reactionRepository.save(reaction);
 		
 	  }
 	   
 	   public Reaction updateComment(Long reactionId,String newCommentText) {
 
-		   Reaction existingReaction=reactionRepository.findById(reactionId).orElseThrow(()-> new RuntimeException("Reaction is not present on these post.."));
+		   Reaction existingReaction=reactionRepository.findById(reactionId).orElseThrow(()-> new ResourceNotFound("Reaction is not present on these post.."));
 		   if(existingReaction.getType() !=ReactionType.COMMENT) {
-			   throw new IllegalStateException("Only COMMENT reactions can be updated.");
+			   throw new ResourceNotFound("Only COMMENT reactions can be updated.");
 		   }
 		    existingReaction.setCommentText(newCommentText);
 		    return reactionRepository.save(existingReaction);
@@ -76,31 +75,30 @@ public class ReactionService {
 	   }
 	   
 	   public void deleteComment(Long reactionId,User user) {
-		  // Post post=postRepository.findById(postId).orElseThrow(()-> new RuntimeException("Post Not found.."));
-		   Reaction getReaction=reactionRepository.findById(reactionId).orElseThrow(()-> new RuntimeException("Comment is not present on these post  "));
-		   
+		
+		   Reaction getReaction=reactionRepository.findById(reactionId).orElseThrow(()-> new ResourceNotFound("Comment is not present on these post  "));
+		   if(!getReaction.getUser().getUserId() .equals(user.getUserId())){
+			
+		   }
 		   if(getReaction.getType() == ReactionType.COMMENT) {
 			   reactionRepository.delete(getReaction);
-		   }
-		   if(!getReaction.getUser().getUserId() .equals(user.getUserId())){
-			   LOGGER.warn("This is not your post");
 		   }
 	   }
 	   
 	   public  long countLikes(Long postId) {
-		   Post post=postRepository.findById(postId).orElseThrow(()-> new RuntimeException("Post Not found"));
-		   return post.getReactions().stream().filter(reaction -> reaction.getType() == ReactionType.COMMENT).count();
+		   Post post=postRepository.findById(postId).orElseThrow(()-> new ResourceNotFound("Post Not found"));
+		   return post.getReactions().stream().filter(reaction -> reaction.getType() == ReactionType.LIKE).count();
 		 
 		 
 	   }
 	   public   long countComments(Long postId) {
-		   Post post=postRepository.findById(postId).orElseThrow(()-> new RuntimeException("Post Not found"));
+		   Post post=postRepository.findById(postId).orElseThrow(()-> new ResourceNotFound("Post Not found"));
 		   return post.getReactions().stream().filter(reaction -> reaction.getType() == ReactionType.COMMENT).count();
 		 
 		 
 	   }
 	   public List<PostResponse> getAllPosts() {
-		    List<Post> posts = postRepository.findAll(); // reactions are fetched eagerly now
+		    List<Post> posts = postRepository.findAll(); 
 
 		    return posts.stream().map(post -> {
 		        long likes = post.getReactions().stream()

@@ -1,5 +1,7 @@
 package blog.com.controller;
 
+
+
 import java.util.List;
 import java.util.Map;
 
@@ -15,20 +17,22 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import blog.com.dto.LoginRequestDto;
 import blog.com.dto.PostResponse;
-import blog.com.model.Post;
+import blog.com.dto.Userdto;
 import blog.com.model.User;
 import blog.com.service.CustomeUserDetailsService;
 import blog.com.service.ReactionService;
+import blog.com.service.TokenBlacklistService;
 import blog.com.service.UserService;
 import blog.com.utilis.JwtUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import lombok.extern.slf4j.Slf4j;
-
-
 @RestController
-@RequestMapping("/public/api/auth")
-@Slf4j
+@RequestMapping("/public/api")
+@Tag(name="AUTH API")
+
 public class AuthController {
 	
 	@Autowired
@@ -37,28 +41,23 @@ public class AuthController {
 	private AuthenticationManager authenticationManager;
 	@Autowired
 	private CustomeUserDetailsService customeUserDetailsService;
-	
-	@Autowired
-	private ReactionService service;
-	
 	@Autowired
 	private UserService userService;
-	
+	@Autowired
+	private TokenBlacklistService blacklistService;
 	@Autowired
 	private ReactionService reactionService;
-//	@PostMapping("/registration")
-//	public ResponseEntity<User> register(@RequestBody User user){
-//	User saveUser=	userService.save(user);
-//		return new ResponseEntity<>(saveUser,HttpStatus.CREATED);
-//	}
+	
+	@GetMapping("/")
+    public ResponseEntity<List<PostResponse>> getAllPosts() {
+        return ResponseEntity.ok(reactionService.getAllPosts());
+    }
+	
+	
+
 	@PostMapping("/registration")
-	public ResponseEntity<?> register(@Valid @RequestBody User user){
+	public ResponseEntity<?> register(@Valid @RequestBody Userdto user){
 	    User savedUser = userService.save(user);
-
-	    // Log the saved user
-	    log.info("New user registered: {}", savedUser.getEmail());
-
-	    // Return the saved user with CREATED status
 	    return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
 	            "message", "User registered successfully",
 	            "email", savedUser.getEmail()
@@ -66,7 +65,7 @@ public class AuthController {
 	}
 
 	@PostMapping("/login")
-	public ResponseEntity<?>login( @RequestBody User user){
+	public ResponseEntity<?>login( @RequestBody LoginRequestDto user){
 		try {
 			authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword()));
 			UserDetails userDetails=customeUserDetailsService.loadUserByUsername(user.getEmail());
@@ -79,27 +78,32 @@ public class AuthController {
 					  ));
 			
 		}catch(Exception e) {
-			log.error("Exception occurred during login", e);
-	        return 
-	        		ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+		    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 	        		.body(Map.of("error","Invalid credentials"));
 			
 	        
 		}
 	}
 	
-	@GetMapping("/posts")
-	public ResponseEntity<List<PostResponse>> getpost(){
-		return new ResponseEntity<>(service.getAllPosts(),HttpStatus.OK);
+	
+	@PostMapping("/logout")
+	public ResponseEntity<?> logout(HttpServletRequest request){
+		String authHeader=request.getHeader("Authorization");
+		if(authHeader !=null && authHeader.startsWith("Bearer ")) {
+			String  token=authHeader.substring(7);
+		     java.util.Date expiryDate=jwtUtils.extractExiprationDate(token);
+		     blacklistService.blacklistToken(token, expiryDate.getTime());
+		     return ResponseEntity.ok("Logged out successfully");
 		
+		}
+		return ResponseEntity.ok("No token found");
 	}
 	
 	
-	/* after comment*/
-//	 @GetMapping("/{postId}/likes/count")
-//	    public ResponseEntity<Long> getLikeCount(@PathVariable Long postId) {
-//	        long likeCount = reactionService.countLikes(postId);
-//	        return ResponseEntity.ok(likeCount);
-//	    }
+	
+
+	
+	
+
 
 }

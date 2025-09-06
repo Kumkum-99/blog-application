@@ -6,8 +6,10 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import blog.com.exception.AuthenticationException;
+import blog.com.exception.ResourceNotFound;
 import blog.com.model.Post;
-import blog.com.model.Reaction;
+
 import blog.com.model.ReactionType;
 import blog.com.model.User;
 import blog.com.repository.PostRepository;
@@ -36,6 +38,15 @@ public class PostService {
 	
 	
 	}
+	public long totalCountsOfComments(Long UserId) {
+		List<Post>posts =getAllPostBYUserId(UserId);
+		  return posts.stream()
+	              .flatMap(post -> post.getReactions().stream())
+	              .filter(reaction -> reaction.getType() == ReactionType.COMMENT)
+	              .count();
+		
+		
+		}
 	
 	 public Post addPost(Post post,User user) {
 		post.setAuthor(user);
@@ -47,9 +58,9 @@ public class PostService {
 	 public void   deletePostById(Long id,String email ) {
 		 
 		 User user=userRepository.findByEmail(email);
-		 Post post=postRepository.findById(id).orElseThrow(()-> new RuntimeException("Post Not found with id:"+ id));
+		 Post post=postRepository.findById(id).orElseThrow(()-> new ResourceNotFound("Post Not found with id:"+ id));
          if(!post.getAuthor().getUserId().equals(user.getUserId())) {
-             throw new RuntimeException("You are not authorized to delete this post");
+             throw new AuthenticationException("You are not authorized to delete this post");
         	 
          }
 		  

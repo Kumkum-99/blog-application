@@ -40,7 +40,7 @@ public class JwtUtils {
                 .add("Type","JWT")
                 .and()
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 1000*60*30))
+                .expiration(new Date(System.currentTimeMillis() + 2000*60*60))
                 .signWith(getSigningKey()).compact();
                 
                 }

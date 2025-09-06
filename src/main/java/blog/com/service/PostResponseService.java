@@ -15,8 +15,9 @@ public class PostResponseService {
 	private PostRepository postRepository;
 	
 	public List<Post> getAllpost(){
-	return null;
-	
+	return postRepository.findAll();
 	}
+	
+	
 
 }
